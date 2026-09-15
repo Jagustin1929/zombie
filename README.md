@@ -8,7 +8,7 @@ You're the night operator at Blackridge, the last relay tower still broadcasting
 
 ## How to run it
 
-Open `PATCH_ZERO_Cyber_Relay.html` in any modern browser (Chrome, Firefox, Edge, Safari) — double-click the file, or drag it into a browser window. That's it. Everything (art, sound, logic) is contained in the one file, so it also works from a USB stick, a shared drive, or a school LMS file upload with no extra setup.
+Open `index.html` in any modern browser (Chrome, Firefox, Edge, Safari) — double-click the file, or drag it into a browser window. That's it. Everything (art, sound, logic) is contained in the one file, so it also works from a USB stick, a shared drive, or a school LMS file upload with no extra setup.
 
 ## How to play
 
