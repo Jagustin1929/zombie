@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patch Zero — The Last Relay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ash:#161A17;
+  --fog:#222825;
+  --fog-2:#2C332E;
+  --edge:#3C453E;
+  --bone:#E7E2D4;
+  --bone-dim:#A8A597;
+  --lichen:#93A857;
+  --lichen-dim:#5E6B39;
+  --rust:#B4432B;
+  --sallow:#D6A32E;
+  --radius:10px;
+  --shadow:0 18px 40px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ash);
+  background-image:
+    radial-gradient(1100px 620px at 78% -8%, rgba(147,168,87,.09), transparent 62%),
+    radial-gradient(760px 520px at 8% 108%, rgba(180,67,43,.08), transparent 60%);
+  background-attachment:fixed;
+  color:var(--bone);
+  font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:16px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+h1,h2,h3,.display{font-family:'Oswald',Impact,'Arial Narrow',sans-serif;font-weight:500;letter-spacing:.01em;margin:0}
+button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--sallow);outline-offset:3px;border-radius:4px}
+
+.shell{max-width:1240px;margin:0 auto;padding:18px 20px 60px}
+
+/* ---------- header ---------- */
+.topbar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid var(--edge)}
+.lockup{display:flex;align-items:center;gap:13px;min-width:0}
+.sigil{width:44px;height:44px;flex:none}
+.lockup-text{min-width:0}
+.lockup h1{font-size:25px;line-height:1;letter-spacing:.06em;text-transform:uppercase}
+.lockup p{margin:4px 0 0;font-size:11.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--bone-dim)}
+.toolbar{display:flex;flex-wrap:wrap;gap:7px}
+.tool{background:var(--fog);border:1px solid var(--edge);border-radius:7px;padding:8px 13px;font-size:13.5px;color:var(--bone-dim);transition:background .15s,color .15s,border-color .15s}
+.tool:hover{background:var(--fog-2);color:var(--bone)}
+.tool[aria-pressed="true"]{background:var(--lichen-dim);border-color:var(--lichen);color:#F2EFE4}
+
+/* ---------- status strip ---------- */
+.status{display:grid;grid-template-columns:auto 1fr auto;gap:22px;align-items:center;padding:16px 0 20px}
+.charge{border:1px solid var(--lichen-dim);background:rgba(147,168,87,.09);border-radius:var(--radius);padding:9px 17px;white-space:nowrap}
+.charge .k{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--bone-dim);display:block}
+.charge .v{font-family:'Oswald',sans-serif;font-size:24px;color:var(--lichen);line-height:1.1}
+.meters{display:grid;gap:11px;min-width:0}
+.meter .row{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--bone-dim);margin-bottom:5px}
+.track{height:7px;background:var(--fog);border:1px solid var(--edge);border-radius:99px;overflow:hidden}
+.fill{height:100%;width:0;border-radius:99px;transition:width .5s ease}
+.fill.relays{background:linear-gradient(90deg,var(--lichen-dim),var(--lichen))}
+.fill.pressure{background:linear-gradient(90deg,var(--sallow),var(--rust))}
+.pressure-label.high{color:var(--rust)}
+
+/* ---------- main grid ---------- */
+.stage{display:grid;grid-template-columns:250px 1fr;gap:26px;align-items:start}
+
+/* ---------- operator column ---------- */
+.bubble{position:relative;background:var(--bone);color:#23271F;border-radius:var(--radius);padding:14px 16px;font-size:14.5px;line-height:1.5;margin-bottom:14px}
+.bubble::after{content:"";position:absolute;bottom:-9px;left:30px;width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:10px solid var(--bone)}
+.portrait{background:var(--fog);border:1px solid var(--edge);border-radius:var(--radius);overflow:hidden}
+.portrait svg{display:block;width:100%;height:auto}
+.who{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 13px;border-top:1px solid var(--edge)}
+.who strong{font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:.04em}
+.who span{font-size:11px;color:var(--bone-dim);border:1px solid var(--edge);border-radius:99px;padding:3px 9px;white-space:nowrap}
+.rattle{margin-top:14px;background:var(--fog);border:1px solid var(--edge);border-left:3px solid var(--rust);border-radius:var(--radius);padding:12px 14px;display:flex;gap:11px;align-items:flex-start}
+.rattle svg{flex:none;margin-top:2px}
+.rattle .n{font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--bone-dim)}
+.rattle .t{font-size:13.5px;font-style:italic;color:#C6C2B2;margin-top:3px}
+
+.window{margin-top:14px;background:var(--fog);border:1px solid var(--edge);border-radius:var(--radius);overflow:hidden}
+.window-frame{position:relative;height:92px;background:linear-gradient(180deg, rgba(60,69,62,.4), rgba(8,10,8,.8));overflow:hidden}
+.window-frame::before,.window-frame::after{content:"";position:absolute;background:var(--edge);opacity:.8}
+.window-frame::before{left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%)}
+.window-frame::after{top:50%;left:0;right:0;height:2px;transform:translateY(-50%)}
+.window .figure{position:absolute;bottom:0;left:50%;width:28px;transform:translateX(-50%) scale(.4);opacity:.2;transition:transform 1s ease,opacity 1s ease;color:#090B08}
+body.p-mid .window .figure{transform:translateX(-50%) scale(.62);opacity:.45}
+body.p-high .window .figure{transform:translateX(-50%) scale(.92);opacity:.75}
+body.breach-now .window .figure{transform:translateX(-50%) scale(1.3);opacity:1}
+body.calm .window .figure{transition:none}
+.window-cap{padding:9px 12px;font-size:12.5px;color:var(--bone-dim);border-top:1px solid var(--edge)}
+
+/* ---------- challenge ---------- */
+.card{background:linear-gradient(168deg,var(--fog-2),var(--fog));border:1px solid var(--edge);border-radius:var(--radius);padding:24px 26px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--lichen),var(--sallow),var(--rust))}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.locale{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--lichen)}
+.tag{font-size:11.5px;color:var(--bone-dim);border:1px solid var(--edge);border-radius:99px;padding:4px 12px;white-space:nowrap}
+.card h2{font-size:30px;line-height:1.14;margin-bottom:11px}
+.card p.scenario{margin:0;font-size:16px;color:#CFCBBC;max-width:66ch}
+
+.choice-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:22px 0 11px;font-size:13px;color:var(--bone-dim)}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.choice{display:flex;gap:13px;align-items:flex-start;text-align:left;background:var(--fog);border:1px solid var(--edge);border-radius:var(--radius);padding:15px 16px;font-size:15px;line-height:1.45;transition:border-color .15s,background .15s}
+.choice:hover:not(:disabled){border-color:var(--bone-dim);background:var(--fog-2)}
+.choice .letter{flex:none;width:26px;height:26px;border-radius:6px;background:var(--fog-2);border:1px solid var(--edge);display:grid;place-items:center;font-family:'Oswald',sans-serif;font-size:14px;color:var(--bone-dim)}
+.choice[aria-pressed="true"]{border-color:var(--sallow);background:rgba(214,163,46,.1)}
+.choice[aria-pressed="true"] .letter{background:var(--sallow);border-color:var(--sallow);color:#20231C}
+.choice.correct{border-color:var(--lichen);background:rgba(147,168,87,.14)}
+.choice.correct .letter{background:var(--lichen);border-color:var(--lichen);color:#20231C}
+.choice.wrong{border-color:var(--rust);background:rgba(180,67,43,.13)}
+.choice.wrong .letter{background:var(--rust);border-color:var(--rust);color:#F5EFE6}
+.choice:disabled{cursor:default;opacity:.85}
+.choice.correct:disabled,.choice.wrong:disabled{opacity:1}
+
+.actions{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:20px}
+.hint-btn{background:var(--fog);border:1px solid var(--edge);border-radius:var(--radius);padding:12px 18px;font-size:14px;color:var(--bone-dim)}
+.hint-btn:hover:not(:disabled){border-color:var(--sallow);color:var(--bone)}
+.hint-btn:disabled{opacity:.4;cursor:not-allowed}
+.lock-btn{background:var(--lichen-dim);border:1px solid var(--lichen);border-radius:var(--radius);padding:13px 26px;font-family:'Oswald',sans-serif;font-size:17px;letter-spacing:.04em;color:#F2EFE4}
+.lock-btn:hover:not(:disabled){background:var(--lichen);color:#1B1E17}
+.lock-btn:disabled{opacity:.35;cursor:not-allowed}
+
+.verdict{margin-top:18px;border-radius:var(--radius);padding:16px 18px;border:1px solid var(--edge);background:var(--fog);display:none}
+.verdict.show{display:block}
+.verdict.good{border-color:var(--lichen-dim);background:rgba(147,168,87,.1)}
+.verdict.bad{border-color:var(--rust);background:rgba(180,67,43,.1)}
+.verdict h3{font-size:18px;margin-bottom:6px}
+.verdict.good h3{color:var(--lichen)}
+.verdict.bad h3{color:var(--rust)}
+.verdict p{margin:0;font-size:14.8px;color:#CFCBBC;max-width:70ch}
+
+.dots{display:flex;flex-wrap:wrap;gap:6px;margin-top:22px}
+.dot{width:26px;height:5px;border-radius:99px;background:var(--edge)}
+.dot.done{background:var(--lichen)}
+.dot.missed{background:var(--rust)}
+.dot.now{background:var(--bone)}
+
+/* ---------- overlays ---------- */
+.veil{position:fixed;inset:0;background:rgba(10,12,10,.84);display:none;place-items:center;padding:22px;z-index:60}
+.veil.show{display:grid}
+.panel{background:var(--fog);border:1px solid var(--edge);border-radius:14px;max-width:660px;width:100%;max-height:86vh;overflow:auto;padding:30px 32px;box-shadow:var(--shadow)}
+.panel h2{font-size:27px;margin-bottom:6px}
+.panel h3{font-size:16px;margin:22px 0 7px;color:var(--lichen)}
+.panel p,.panel li{font-size:15px;color:#CFCBBC;max-width:64ch}
+.panel ul{padding-left:20px;margin:8px 0}
+.panel li{margin-bottom:7px}
+.panel a{color:var(--sallow)}
+.panel .close{margin-top:24px;background:var(--fog-2);border:1px solid var(--edge);border-radius:var(--radius);padding:11px 22px;font-family:'Oswald',sans-serif;letter-spacing:.04em;font-size:16px}
+.panel .close:hover{border-color:var(--bone-dim)}
+
+.breach{position:fixed;inset:0;background:rgba(80,20,10,.5);z-index:70;display:none;place-items:center;pointer-events:none}
+.breach.show{display:grid}
+.breach div{font-family:'Oswald',sans-serif;font-size:min(9vw,74px);letter-spacing:.1em;text-transform:uppercase;color:#F0E6DC;text-shadow:0 0 30px rgba(180,67,43,.9);text-align:center;padding:0 20px}
+
+/* ---------- start & end ---------- */
+.gate{max-width:730px;margin:5vh auto 0;text-align:left}
+.gate-grid{display:grid;grid-template-columns:1fr;gap:0}
+.gate .eyebrow{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--rust);margin-bottom:14px}
+.gate h2{font-size:clamp(40px,7.4vw,70px);line-height:.98;letter-spacing:.01em;margin-bottom:8px}
+.gate .sub{font-family:'Oswald',sans-serif;font-size:21px;color:var(--lichen);letter-spacing:.05em;margin-bottom:22px}
+.gate p{font-size:16.5px;color:#CFCBBC;max-width:60ch;margin:0 0 15px}
+.gate .go{margin-top:12px;background:var(--rust);border:1px solid var(--rust);border-radius:var(--radius);padding:15px 34px;font-family:'Oswald',sans-serif;font-size:21px;letter-spacing:.05em;color:#F7EFE8}
+.gate .go:hover{background:#C94A30}
+.brief{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin:26px 0 8px}
+.brief div{background:var(--fog);border:1px solid var(--edge);border-left:3px solid var(--lichen-dim);border-radius:var(--radius);padding:13px 15px}
+.brief b{display:block;font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:.03em;margin-bottom:3px}
+.brief span{font-size:13.5px;color:var(--bone-dim)}
+.gate-art{display:flex;justify-content:center;align-items:flex-end;margin-top:20px}
+.zombie-hero{width:min(64vw,300px);height:auto;filter:drop-shadow(0 24px 34px rgba(0,0,0,.55))}
+@media (min-width:860px){
+  .gate{max-width:960px}
+  .gate-grid{grid-template-columns:1.15fr .85fr;gap:44px;align-items:end}
+  .gate-art{margin-top:0}
+  .zombie-hero{width:100%;max-width:300px}
+}
+
+.report{background:var(--fog);border:1px solid var(--edge);border-radius:var(--radius);padding:18px 20px;margin:22px 0}
+.report h3{font-family:'Oswald',sans-serif;font-size:17px;margin-bottom:10px}
+.report ul{padding-left:19px;margin:0}
+.report li{font-size:14.5px;color:#CFCBBC;margin-bottom:9px}
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:22px 0}
+.scores div{background:var(--fog);border:1px solid var(--edge);border-radius:var(--radius);padding:14px 16px}
+.scores span{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim)}
+.scores b{font-family:'Oswald',sans-serif;font-size:29px;font-weight:500;color:var(--lichen)}
+
+.hidden{display:none !important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- zombie atmosphere ---------- */
+.decay-overlay{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.4;mix-blend-mode:overlay}
+.shamblers{position:fixed;left:0;right:0;bottom:0;height:70px;pointer-events:none;z-index:2;opacity:.5;overflow:hidden}
+.shamblers svg{position:absolute;bottom:-4px;color:#0D0F0C}
+.shambler{animation:shamble linear infinite}
+@keyframes shamble{from{transform:translateX(-6%)}to{transform:translateX(107vw)}}
+body.calm .shambler{animation:none}
+
+.vignette{position:fixed;inset:0;pointer-events:none;z-index:3;background:radial-gradient(ellipse at center, transparent 50%, rgba(120,24,12,.45) 100%);opacity:0;transition:opacity .7s}
+body.p-mid .vignette{opacity:.32}
+body.p-high .vignette{opacity:.55;animation:pulse-vig 1.7s ease-in-out infinite}
+body.calm .vignette{animation:none}
+@keyframes pulse-vig{0%,100%{opacity:.42}50%{opacity:.72}}
+
+.claw-corner{position:fixed;width:170px;height:170px;pointer-events:none;z-index:4;opacity:0;transition:opacity .6s;color:#6B1D10}
+.claw-corner.tl{top:-40px;left:-40px}
+.claw-corner.br{bottom:-40px;right:-40px;transform:rotate(180deg)}
+body.p-high .claw-corner{opacity:.45}
+body.breach-now .claw-corner{opacity:.95;transition:opacity .15s}
+
+.horde-visual{display:flex;gap:6px;margin-top:7px}
+.horde-visual svg{width:19px;height:19px;color:var(--rust);opacity:.16;transition:opacity .4s,filter .4s}
+.horde-visual svg.lit{opacity:1;filter:drop-shadow(0 0 4px rgba(180,67,43,.75))}
+
+.salvage-count{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;background:var(--rust);color:#F5EFE6;border-radius:99px;font-size:10.5px;margin-left:8px;font-family:'Oswald',sans-serif;vertical-align:1px}
+.salvage-item{background:var(--fog);border:1px solid var(--edge);border-left:3px solid var(--sallow);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
+.salvage-item .loc{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--sallow);display:block;margin-bottom:4px}
+.salvage-item p{margin:0;font-size:14.5px;font-style:italic;color:#CFCBBC}
+.salvage-empty{font-size:14.5px;color:var(--bone-dim)}
+.salvage-note{margin-top:9px;font-size:13px;color:var(--sallow);font-style:italic;display:none}
+.salvage-note.show{display:block}
+
+.blink{animation:blink 2.4s ease-in-out infinite}
+@keyframes blink{0%,92%,100%{opacity:1}95%{opacity:.25}}
+.shake{animation:shake .42s}
+@keyframes shake{0%,100%{transform:translateX(0)}22%{transform:translateX(-7px)}46%{transform:translateX(6px)}72%{transform:translateX(-3px)}}
+body.calm .blink{animation:none}
+body.calm .shake{animation:none}
+body.calm .fill{transition:none}
+@media (prefers-reduced-motion:reduce){
+  .blink{animation:none}.shake{animation:none}.fill{transition:none}
+  .shambler{animation:none}body.p-high .vignette{animation:none}
+}
+
+@media (max-width:900px){
+  .stage{grid-template-columns:1fr}
+  .operator{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:start}
+  .bubble{grid-column:1/-1;margin-bottom:0}
+  .rattle{margin-top:0}
+  .window{grid-column:1/-1}
+  .status{grid-template-columns:1fr;gap:14px}
+  .charge{justify-self:start}
+}
+@media (max-width:620px){
+  .shell{padding:14px 14px 48px}
+  .choices{grid-template-columns:1fr}
+  .card{padding:20px 18px}
+  .card h2{font-size:25px}
+  .operator{grid-template-columns:1fr}
+  .actions{flex-direction:column;align-items:stretch}
+  .lock-btn,.hint-btn{width:100%}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="zsil" viewBox="0 0 40 80">
+      <ellipse cx="20" cy="10" rx="8" ry="9" fill="currentColor"/>
+      <path d="M8 23 C8 16 14 21 20 21 C26 21 32 16 32 23 L37 54 L26 54 L24 79 L16 79 L14 54 L3 54 Z" fill="currentColor"/>
+    </symbol>
+    <symbol id="claw" viewBox="0 0 170 170">
+      <path d="M0 170 L45 65 L60 100 L78 42 L96 105 L118 48 L130 110 L170 62" stroke="currentColor" stroke-width="11" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+      <path d="M0 170 L45 65 L60 100 L78 42 L96 105 L118 48 L130 110 L170 62" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" opacity=".5"/>
+    </symbol>
+    <symbol id="zfig-simple" viewBox="0 0 100 200">
+      <path d="M50 8 C60 8 66 17 65 27 C64 36 58 42 50 42 C42 42 36 36 35 27 C34 17 40 8 50 8 Z" fill="currentColor"/>
+      <path d="M34 46 C34 39 42 35 50 35 C58 35 66 39 66 46 L71 100 L29 100 Z" fill="currentColor"/>
+      <path d="M34 58 C20 65 10 80 5 99" stroke="currentColor" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M66 58 C81 63 91 76 95 93" stroke="currentColor" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M40 100 L33 192" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
+      <path d="M60 100 L69 190" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="zfig-lean" viewBox="0 0 100 200">
+      <path d="M46 6 C56 4 64 12 64 22 C64 31 58 38 50 39 C42 38 37 30 38 21 C39 12 40 8 46 6 Z" fill="currentColor"/>
+      <path d="M32 44 C32 37 40 33 50 33 C60 33 68 37 68 44 L74 98 L26 98 Z" fill="currentColor"/>
+      <path d="M32 56 C14 58 4 70 2 90" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/>
+      <path d="M68 50 C84 46 96 34 98 18" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/>
+      <path d="M38 98 L30 192" stroke="currentColor" stroke-width="11" stroke-linecap="round"/>
+      <path d="M62 98 L72 188" stroke="currentColor" stroke-width="11" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="zfig-hunch" viewBox="0 0 100 200">
+      <path d="M50 30 C59 30 65 37 64 46 C63 54 57 59 50 59 C43 59 37 54 36 46 C35 37 41 30 50 30 Z" fill="currentColor"/>
+      <path d="M30 62 C34 56 42 63 50 63 C58 63 66 56 70 62 L76 108 L24 108 Z" fill="currentColor"/>
+      <path d="M32 70 C20 78 12 92 10 108" stroke="currentColor" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M68 70 C80 78 88 92 90 108" stroke="currentColor" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M40 108 L34 194" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
+      <path d="M60 108 L66 192" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="zfig-drag" viewBox="0 0 100 200">
+      <path d="M52 8 C61 8 67 16 66 25 C65 33 59 39 51 39 C44 39 38 33 38 25 C38 16 43 8 52 8 Z" fill="currentColor"/>
+      <path d="M36 44 C36 38 43 34 51 34 C59 34 67 38 67 44 L73 96 L29 96 Z" fill="currentColor"/>
+      <path d="M36 56 C22 62 12 74 8 92" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/>
+      <path d="M67 54 C80 58 90 68 94 82" stroke="currentColor" stroke-width="9" fill="none" stroke-linecap="round"/>
+      <path d="M42 96 L46 190" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
+      <path d="M58 96 C50 130 70 150 62 194" stroke="currentColor" stroke-width="12" fill="none" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<svg class="decay-overlay" aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 100 100">
+  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0"/></filter>
+  <rect width="100" height="100" filter="url(#grain)"/>
+</svg>
+
+<div class="shamblers" aria-hidden="true">
+  <svg class="shambler" style="width:28px;bottom:0;animation-duration:41s;animation-delay:-4s;color:#0D0F0C" viewBox="0 0 100 200"><use href="#zfig-simple"/></svg>
+  <svg class="shambler" style="width:20px;bottom:0;animation-duration:55s;animation-delay:-26s;opacity:.65;color:#0B0D0A" viewBox="0 0 100 200"><use href="#zfig-hunch"/></svg>
+  <svg class="shambler" style="width:24px;bottom:2px;animation-duration:47s;animation-delay:-14s;opacity:.85;color:#10130F" viewBox="0 0 100 200"><use href="#zfig-lean"/></svg>
+  <svg class="shambler" style="width:17px;bottom:0;animation-duration:63s;animation-delay:-38s;opacity:.55;color:#0B0D0A" viewBox="0 0 100 200"><use href="#zfig-drag"/></svg>
+  <svg class="shambler" style="width:22px;bottom:0;animation-duration:50s;animation-delay:-8s;opacity:.7;color:#0F110D" viewBox="0 0 100 200"><use href="#zfig-hunch"/></svg>
+  <svg class="shambler" style="width:19px;bottom:1px;animation-duration:58s;animation-delay:-45s;opacity:.6;color:#0D0F0C" viewBox="0 0 100 200"><use href="#zfig-simple"/></svg>
+</div>
+
+<div class="vignette" aria-hidden="true"></div>
+<svg class="claw-corner tl" aria-hidden="true" viewBox="0 0 170 170"><use href="#claw"/></svg>
+<svg class="claw-corner br" aria-hidden="true" viewBox="0 0 170 170"><use href="#claw"/></svg>
+
+<div class="shell">
+
+  <!-- ============ START GATE ============ -->
+  <section class="gate" id="gate">
+    <div class="gate-grid">
+    <div class="gate-text">
+    <p class="eyebrow">Blackridge relay · night shift · you are alone on channel</p>
+    <h2>Patch Zero</h2>
+    <p class="sub">The last relay still talking</p>
+    <p>Eleven months since the networks fell. Blackridge is the only tower still pushing a signal, and one by one the safe houses out in the valley have gone quiet.</p>
+    <p>None of them were overrun by anything with teeth. Every single one went dark because somebody clicked something, trusted somebody, or reused a password. The infection out there travels on fibre, not blood.</p>
+    <p>Fifteen safe houses. Fifteen calls. Get them back online.</p>
+
+    <div class="brief">
+      <div><b>Generator charge</b><span>Your score. Right calls feed the tower, hints drain it.</span></div>
+      <div><b>Horde pressure</b><span>Climbs on every wrong call. Fill it and the fence comes down.</span></div>
+      <div><b>Vex</b><span>Your operator. She'll narrow it down if you ask, for a price.</span></div>
+    </div>
+
+    <button class="go" id="btn-begin">Open the channel</button>
+    </div>
+    <div class="gate-art" aria-hidden="true">
+      <svg class="zombie-hero" viewBox="0 0 220 300" role="img" aria-label="Illustration of a shambling infected figure with grey decayed skin, a torn rust-stained shirt, hollow eyes with a faint sickly glow, and one arm reaching">
+        <defs>
+          <linearGradient id="zskin" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#8B9578"/><stop offset="1" stop-color="#5B6650"/>
+          </linearGradient>
+          <linearGradient id="zshirt" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#4A3A32"/><stop offset="1" stop-color="#241C18"/>
+          </linearGradient>
+          <radialGradient id="zeye"><stop offset="0" stop-color="#D8E8A0"/><stop offset="1" stop-color="#5E6B39" stop-opacity="0"/></radialGradient>
+          <radialGradient id="zshadow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+        </defs>
+
+        <ellipse cx="110" cy="286" rx="70" ry="14" fill="url(#zshadow)"/>
+
+        <use href="#zfig-lean" width="60" height="138" x="-4" y="82" style="color:#3B4238" opacity=".6"/>
+        <use href="#zfig-hunch" width="56" height="128" x="160" y="100" style="color:#333A30" opacity=".55"/>
+        <use href="#zfig-drag" width="44" height="102" x="72" y="132" style="color:#2E342B" opacity=".42"/>
+        <use href="#zfig-simple" width="40" height="92" x="122" y="140" style="color:#282E24" opacity=".38"/>
+
+        <path d="M150 150 C182 140 205 118 214 92" stroke="url(#zskin)" stroke-width="17" fill="none" stroke-linecap="round"/>
+        <path d="M214 92 L226 78 M214 92 L222 100 M214 92 L206 100" stroke="url(#zskin)" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+        <path d="M92 220 L82 288" stroke="#33291f" stroke-width="20" stroke-linecap="round"/>
+        <path d="M128 220 L146 286" stroke="#291f17" stroke-width="20" stroke-linecap="round"/>
+
+        <path d="M78 150 C78 128 96 116 110 116 C124 116 142 128 142 150 L150 222 L68 222 Z" fill="url(#zshirt)"/>
+        <path d="M70 218 L66 232 L76 220 M100 220 L96 236 L106 222 M126 219 L124 234 L134 221" stroke="#1C1512" stroke-width="2" fill="none" opacity=".7"/>
+        <path d="M84 160 L96 178 L88 196 L102 210" stroke="#1C1512" stroke-width="2" fill="none" opacity=".6"/>
+        <path d="M60 150 L78 150 L74 172 L54 168 Z" fill="url(#zshirt)"/>
+
+        <path d="M78 150 C56 158 40 176 30 202" stroke="url(#zskin)" stroke-width="17" fill="none" stroke-linecap="round"/>
+        <path d="M30 202 L18 214 M30 202 L24 216 M30 202 L34 218" stroke="url(#zskin)" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+        <path d="M98 108 L98 122 L122 122 L122 108 Z" fill="url(#zskin)"/>
+        <path d="M110 60 C130 60 142 76 140 98 C138 118 124 130 108 130 C90 130 78 116 78 96 C78 76 92 60 110 60 Z" fill="url(#zskin)"/>
+
+        <ellipse cx="92" cy="78" rx="5" ry="7" fill="#3E4636" opacity=".4"/>
+        <ellipse cx="128" cy="108" rx="6" ry="4" fill="#3E4636" opacity=".4"/>
+        <ellipse cx="132" cy="82" rx="4" ry="5" fill="#252B20" opacity=".35"/>
+        <ellipse cx="88" cy="112" rx="4" ry="3" fill="#252B20" opacity=".3"/>
+
+        <path d="M82 78 C80 60 96 48 112 48 C128 48 142 58 140 76 C136 66 126 60 112 60 C98 60 86 66 82 78 Z" fill="#232A25"/>
+        <path d="M78 82 C76 90 78 98 84 100" stroke="#232A25" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M138 80 C142 88 140 96 134 100" stroke="#232A25" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>
+
+        <ellipse cx="98" cy="92" rx="9" ry="7" fill="#1A1D18"/>
+        <ellipse cx="122" cy="92" rx="9" ry="7" fill="#1A1D18"/>
+        <circle cx="98" cy="93" r="7" fill="url(#zeye)"/>
+        <circle cx="122" cy="93" r="7" fill="url(#zeye)"/>
+        <circle cx="98" cy="93" r="2.2" fill="#D8E8A0"/>
+        <circle cx="122" cy="93" r="2.2" fill="#D8E8A0"/>
+
+        <path d="M84 100 C88 108 92 112 98 114" stroke="#4B5642" stroke-width="2" fill="none" opacity=".6"/>
+        <path d="M136 100 C132 108 128 112 122 114" stroke="#4B5642" stroke-width="2" fill="none" opacity=".6"/>
+
+        <path d="M96 112 C100 122 120 122 124 112 C120 118 100 118 96 112 Z" fill="#241C18"/>
+        <path d="M100 114 h3 M106 115 h3 M112 115 h3 M118 114 h3" stroke="#D8D2C2" stroke-width="1.6"/>
+
+        <circle cx="118" cy="170" r="3" fill="#7A2015" opacity=".55"/>
+        <circle cx="126" cy="180" r="2" fill="#7A2015" opacity=".5"/>
+        <path d="M118 170 L128 194" stroke="#7A2015" stroke-width="1.4" opacity=".4"/>
+      </svg>
+    </div>
+    </div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <div id="game" class="hidden">
+
+    <header class="topbar">
+      <div class="lockup">
+        <svg class="sigil" viewBox="0 0 44 44" aria-hidden="true">
+          <circle cx="22" cy="22" r="20" fill="none" stroke="#5E6B39" stroke-width="2"/>
+          <circle cx="22" cy="22" r="13" fill="none" stroke="#3C453E" stroke-width="1.5"/>
+          <path d="M22 9 L22 22 L31 28" fill="none" stroke="#93A857" stroke-width="2.4" stroke-linecap="round"/>
+          <circle cx="22" cy="22" r="3" fill="#B4432B"/>
+        </svg>
+        <div class="lockup-text">
+          <h1>Patch Zero</h1>
+          <p>Blackridge relay</p>
+        </div>
+      </div>
+      <nav class="toolbar" aria-label="Settings and help">
+        <button class="tool" id="t-sound" aria-pressed="true">Sound on</button>
+        <button class="tool" id="t-music" aria-pressed="false">Groans off</button>
+        <button class="tool" id="t-how">How to play</button>
+        <button class="tool" id="t-guide">Field guide</button>
+        <button class="tool" id="t-salvage">Salvage log<span class="salvage-count" id="salvage-count">0</span></button>
+      </nav>
+    </header>
+
+    <div class="status">
+      <div class="charge">
+        <span class="k">Generator charge</span>
+        <span class="v" id="charge-val">0</span>
+      </div>
+      <div class="meters">
+        <div class="meter">
+          <div class="row"><span>Safe houses back online</span><span id="relay-count">0 / 15</span></div>
+          <div class="track"><div class="fill relays" id="relay-fill"></div></div>
+        </div>
+        <div class="meter">
+          <div class="row"><span class="pressure-label" id="pressure-label">Horde pressure</span><span id="pressure-val">0%</span></div>
+          <div class="track"><div class="fill pressure" id="pressure-fill"></div></div>
+          <div class="horde-visual" id="horde-visual" aria-hidden="true">
+            <svg viewBox="0 0 40 80"><use href="#zsil"/></svg>
+            <svg viewBox="0 0 40 80"><use href="#zsil"/></svg>
+            <svg viewBox="0 0 40 80"><use href="#zsil"/></svg>
+            <svg viewBox="0 0 40 80"><use href="#zsil"/></svg>
+            <svg viewBox="0 0 40 80"><use href="#zsil"/></svg>
+            <svg viewBox="0 0 40 80"><use href="#zsil"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+
+      <aside class="operator">
+        <div class="bubble" id="vex-line">Channel's open. Take your time — a rushed call is how the last three houses went quiet.</div>
+        <div class="portrait">
+          <svg viewBox="0 0 220 240" role="img" aria-label="Illustration of Vex, a relay operator in a hooded respirator with a cracked lens, a patched hood, a bandage across her jaw, and blood spatter on her shoulder that isn't hers">
+            <defs>
+              <linearGradient id="hoodG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#4A5347"/><stop offset="1" stop-color="#2E352F"/>
+              </linearGradient>
+              <radialGradient id="lensG"><stop offset="0" stop-color="#C7DA85"/><stop offset="1" stop-color="#5E6B39"/></radialGradient>
+            </defs>
+            <rect width="220" height="240" fill="#232A25"/>
+            <circle cx="110" cy="112" r="86" fill="#2B332C"/>
+            <path d="M42 240 C46 184 74 158 110 158 C146 158 174 184 178 240 Z" fill="#3A4339"/>
+            <path d="M92 152 h36 v22 h-36 z" fill="#6E6152"/>
+            <path d="M52 108 C52 60 76 34 110 34 C144 34 168 60 168 108 C168 150 146 176 110 176 C74 176 52 150 52 108 Z" fill="url(#hoodG)"/>
+            <path d="M68 104 C68 74 86 58 110 58 C134 58 152 74 152 104 C152 136 134 154 110 154 C86 154 68 136 68 104 Z" fill="#8E8172"/>
+            <circle cx="90" cy="100" r="15" fill="url(#lensG)"/>
+            <circle cx="130" cy="100" r="15" fill="url(#lensG)"/>
+            <circle cx="90" cy="100" r="15" fill="none" stroke="#2E352F" stroke-width="4"/>
+            <circle cx="130" cy="100" r="15" fill="none" stroke="#2E352F" stroke-width="4"/>
+            <circle cx="85" cy="95" r="4" fill="#EDF3D8" opacity=".55"/>
+            <circle cx="125" cy="95" r="4" fill="#EDF3D8" opacity=".55"/>
+            <rect x="94" y="122" width="32" height="26" rx="9" fill="#414B40"/>
+            <circle cx="104" cy="135" r="3.4" fill="#232A25"/>
+            <circle cx="116" cy="135" r="3.4" fill="#232A25"/>
+            <rect x="150" y="96" width="20" height="30" rx="7" fill="#4E5A48"/>
+            <rect x="154" y="103" width="12" height="4" rx="2" fill="#2E352F"/>
+            <rect x="154" y="111" width="12" height="4" rx="2" fill="#2E352F"/>
+            <path d="M56 92 C50 92 46 86 48 78" stroke="#4E5A48" stroke-width="6" fill="none" stroke-linecap="round"/>
+            <path d="M48 78 L44 40" stroke="#4E5A48" stroke-width="4" stroke-linecap="round"/>
+            <circle class="blink" cx="44" cy="36" r="5" fill="#B4432B"/>
+            <path d="M74 190 h72 v7 h-72 z" fill="#4E5A48"/>
+            <!-- crack across right lens -->
+            <path d="M138 90 L131 99 L139 103 L131 113" stroke="#161A17" stroke-width="1.7" fill="none" opacity=".85"/>
+            <!-- patched hood -->
+            <rect x="126" y="58" width="24" height="17" rx="2" fill="#5B6350" stroke="#242A24" stroke-width="1.3" stroke-dasharray="2.4 2"/>
+            <!-- bandage across jaw -->
+            <g transform="rotate(-7 103 148)">
+              <rect x="85" y="143" width="36" height="10" rx="3" fill="#D8D2C2" opacity=".93"/>
+              <rect x="85" y="143" width="36" height="10" rx="3" fill="none" stroke="#8E8172" stroke-width=".7"/>
+            </g>
+            <!-- blood spatter on the shoulder, not hers -->
+            <path d="M148 176 L163 200" stroke="#7A2015" stroke-width="1.5" opacity=".5"/>
+            <circle cx="151" cy="185" r="2.7" fill="#7A2015" opacity=".8"/>
+            <circle cx="159" cy="192" r="1.7" fill="#7A2015" opacity=".7"/>
+            <circle cx="144" cy="196" r="1.3" fill="#7A2015" opacity=".6"/>
+            <circle cx="163" cy="182" r="1.1" fill="#7A2015" opacity=".65"/>
+          </svg>
+          <div class="who"><strong>Vex</strong><span>Your operator</span></div>
+        </div>
+        <div class="window" aria-hidden="true">
+          <div class="window-frame">
+            <svg class="figure" viewBox="0 0 100 200"><use href="#zfig-hunch"/></svg>
+          </div>
+          <div class="window-cap" id="window-cap">Quiet out past the wire.</div>
+        </div>
+        <div class="rattle">
+          <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+            <rect x="2" y="6" width="18" height="13" rx="3" fill="#3C453E" stroke="#B4432B"/>
+            <circle cx="8" cy="12.5" r="2" fill="#B4432B"/><circle cx="14" cy="12.5" r="2" fill="#B4432B"/>
+            <path d="M11 6 V2" stroke="#B4432B" stroke-width="1.6"/><circle cx="11" cy="1.6" r="1.6" fill="#D6A32E"/>
+          </svg>
+          <div>
+            <div class="n">Rattle · scanner</div>
+            <div class="t" id="rattle-line">…anyone still on nine? anyone…</div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="card" id="card">
+        <div class="card-head">
+          <span class="locale" id="q-locale">Mill Road Safe House</span>
+          <span class="tag" id="q-tag">Call 01 of 15</span>
+        </div>
+        <h2 id="q-title">—</h2>
+        <p class="scenario" id="q-scenario">—</p>
+
+        <div class="choice-head">
+          <span>Pick one call</span>
+          <span id="q-worth">100 charge on the line</span>
+        </div>
+        <div class="choices" id="choices" role="group" aria-label="Answer options"></div>
+
+        <div class="actions">
+          <button class="hint-btn" id="btn-hint">Ask Vex · costs 40 charge</button>
+          <button class="lock-btn" id="btn-lock" disabled>Lock in the call</button>
+        </div>
+
+        <div class="verdict" id="verdict" role="status" aria-live="polite">
+          <h3 id="v-head"></h3>
+          <p id="v-body"></p>
+          <p class="salvage-note" id="v-salvage"></p>
+        </div>
+
+        <div class="dots" id="dots" aria-hidden="true"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ DEBRIEF ============ -->
+  <section class="gate hidden" id="debrief">
+    <p class="eyebrow" id="d-eyebrow">Dawn · the tower held</p>
+    <h2 id="d-title">Signal restored</h2>
+    <p class="sub" id="d-rank">—</p>
+    <p id="d-body">—</p>
+    <div class="scores">
+      <div><span>Final charge</span><b id="d-charge">0</b></div>
+      <div><span>Houses online</span><b id="d-relays">0</b></div>
+      <div><span>First-try calls</span><b id="d-clean">0</b></div>
+      <div><span>Fence breaches</span><b id="d-breach">0</b></div>
+    </div>
+    <div class="report hidden" id="d-report">
+      <h3>Worth going over again</h3>
+      <ul id="d-misses"></ul>
+    </div>
+    <button class="go" id="btn-again">Run the night again</button>
+  </section>
+</div>
+
+<!-- ============ OVERLAYS ============ -->
+<div class="veil" id="veil-how" role="dialog" aria-modal="true" aria-labelledby="how-h">
+  <div class="panel">
+    <h2 id="how-h">How to play</h2>
+    <p>Fifteen safe houses have gone dark. Each one radios in with a situation. Choose the call you'd actually make, then lock it in.</p>
+    <h3>Generator charge</h3>
+    <p>A correct first call feeds 100 charge into the tower. Asking Vex for help costs 40 before you answer. A wrong call earns nothing.</p>
+    <h3>Horde pressure</h3>
+    <p>Every wrong call raises pressure by 25%. Hit 100% and the fence comes down — you lose 150 charge and the night gets harder. Pressure eases slightly with each clean call.</p>
+    <h3>Keyboard</h3>
+    <p>Press A, B, C or D (or 1–4) to pick an option. Press Enter to lock it in, and Enter again to move to the next call.</p>
+    <h3>One thing worth knowing</h3>
+    <p>Every scenario here is a real thing that happens to real people. The zombies are set dressing. The advice isn't.</p>
+    <button class="close" data-close>Back to the channel</button>
+  </div>
+</div>
+
+<div class="veil" id="veil-guide" role="dialog" aria-modal="true" aria-labelledby="guide-h">
+  <div class="panel">
+    <h2 id="guide-h">Field guide</h2>
+    <p>Where to go when something happens for real, in Australia.</p>
+    <h3>Scams, dodgy texts and fake offers</h3>
+    <ul>
+      <li>Scamwatch (run by the National Anti-Scam Centre) — <a href="https://www.scamwatch.gov.au" target="_blank" rel="noopener">scamwatch.gov.au</a></li>
+      <li>Scam texts can be forwarded to 7226 (that spells SCAM) free of charge.</li>
+    </ul>
+    <h3>Hacking, ransomware and stolen accounts</h3>
+    <ul>
+      <li>ReportCyber — <a href="https://www.cyber.gov.au" target="_blank" rel="noopener">cyber.gov.au</a>, run by the Australian Signals Directorate.</li>
+      <li>IDCARE for identity theft support — <a href="https://www.idcare.org" target="_blank" rel="noopener">idcare.org</a></li>
+    </ul>
+    <h3>Bullying, image abuse and harmful content</h3>
+    <ul>
+      <li>eSafety Commissioner — <a href="https://www.esafety.gov.au" target="_blank" rel="noopener">esafety.gov.au</a></li>
+      <li>Kids Helpline, 24/7, 1800 55 1800 — <a href="https://kidshelpline.com.au" target="_blank" rel="noopener">kidshelpline.com.au</a></li>
+    </ul>
+    <h3>Checking if your details leaked</h3>
+    <ul>
+      <li>Have I Been Pwned — <a href="https://haveibeenpwned.com" target="_blank" rel="noopener">haveibeenpwned.com</a></li>
+    </ul>
+    <p>At school or at work, tell IT or a teacher early. Nobody has ever been in trouble for reporting something too fast.</p>
+    <button class="close" data-close>Back to the channel</button>
+  </div>
+</div>
+
+<div class="veil" id="veil-salvage" role="dialog" aria-modal="true" aria-labelledby="salvage-h">
+  <div class="panel">
+    <h2 id="salvage-h">Salvage log</h2>
+    <p>Whatever gets found at a safe house once it's back online. Bits of what actually happened.</p>
+    <div id="salvage-list"></div>
+    <button class="close" data-close>Back to the channel</button>
+  </div>
+</div>
+
+<div class="breach" id="breach">
+  <svg class="claw-corner tl" style="position:absolute;top:-40px;left:-40px;opacity:.95;color:#8A2A17" aria-hidden="true" viewBox="0 0 170 170"><use href="#claw"/></svg>
+  <svg class="claw-corner br" style="position:absolute;bottom:-40px;right:-40px;opacity:.95;color:#8A2A17;transform:rotate(180deg)" aria-hidden="true" viewBox="0 0 170 170"><use href="#claw"/></svg>
+  <div>Fence down</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===================== CONTENT ===================== */
+const QUESTIONS = [
+  {
+    locale:"Mill Road Safe House",
+    title:"The account that's about to be shut",
+    scenario:"Mill Road radios in. An email landed saying their myGov account will be suspended in 24 hours unless they confirm their details, and there's a link right there in the message. The logo looks right. What do you tell them?",
+    options:[
+      "Click the link, but only type the password and nothing else.",
+      "Reply to the email asking the department to confirm it's genuine.",
+      "Ignore the link. Open the official app or type the address in yourself and check the account there.",
+      "Forward it to everyone in the valley so nobody else gets caught."
+    ],
+    answer:2,
+    hint:"Two of these still end with somebody trusting the email. One of them doesn't touch the email at all.",
+    why:"Urgency plus a link is the oldest trick there is. Logos are trivial to copy and reply addresses can be faked, so never let the message decide where you land. Go to the service the way you normally would — your own bookmark, the app, or typing the address — and if the warning is real, it'll be waiting for you there."
+  },
+  {
+    locale:"Quarry Camp",
+    title:"Four passwords, one decision",
+    scenario:"Quarry Camp is setting up a new account for their supply log and they want to get it right this time. They read you four options over the radio. Which one is actually the strongest?",
+    options:[
+      "Passw0rd!2024",
+      "rusty-lantern-marmalade-gate",
+      "Quarry@Camp99",
+      "Xk7$q2 — short but completely random"
+    ],
+    answer:1,
+    hint:"Cracking software isn't a person guessing. It doesn't care how clever the substitutions look — it cares how long the thing is.",
+    why:"Length beats complexity. A four-word passphrase is far harder to crack than a short scramble, and you can actually remember it. Swapping letters for numbers and symbols is a pattern cracking tools have expected for twenty years, and anything built from the account's own name is the first thing tried."
+  },
+  {
+    locale:"Watt Street Flats",
+    title:"A code you didn't ask for",
+    scenario:"It's 2am. Watt Street gets a text with a six-digit verification code for their email account. Nobody there is trying to log in. Then another one arrives. Then a third. What's the call?",
+    options:[
+      "Ignore it — unrequested codes are usually just a glitch.",
+      "Don't enter the code anywhere. Change that password now and check nothing else uses it.",
+      "Enter the newest code to cancel out the older ones.",
+      "Turn the phone off until morning so the texts stop."
+    ],
+    answer:1,
+    hint:"Ask why a code is being generated at all. Something had to happen before the text could exist.",
+    why:"Those codes only get sent after someone enters the correct password. So somebody already has it — the second factor is the only thing standing between them and the account. Change the password immediately, and anywhere else that password was reused. Never type the code in response to a message or a phone call."
+  },
+  {
+    locale:"Shopping Strip Outpost",
+    title:"Free wi-fi, one small favour",
+    scenario:"The outpost at the old shopping strip has found working wi-fi. It's open, it's free, and to connect you just have to sign in with your Facebook account. They want to use it to check their bank balance.",
+    options:[
+      "Connect and sign in with Facebook, but only check the balance, don't transfer anything.",
+      "Connect, but use a private or incognito window to stay safe.",
+      "Skip it. Use phone data or a hotspot for anything involving money or logins.",
+      "Connect and change the Facebook password straight afterwards."
+    ],
+    answer:2,
+    hint:"Private browsing hides things from the device you're holding. Think about who else is on the network.",
+    why:"An open network can be run by anybody, including someone sitting in a car park with a laptop. A sign-in wall asking for a social account is a classic way to harvest real credentials. Incognito mode hides your history from your own device and nothing more. For banking, use mobile data — or a trusted VPN if you have one."
+  },
+  {
+    locale:"Ridge Lookout",
+    title:"Remind me tomorrow",
+    scenario:"Ridge Lookout's only tablet has been asking to install a system update for three weeks. They keep tapping 'remind me later' because the download is big and the restart is annoying. They ask if it actually matters.",
+    options:[
+      "It's fine to skip — updates mostly just change how things look.",
+      "Install it soon. Updates close security holes that attackers already know about.",
+      "Only update if the device starts behaving strangely.",
+      "Wait a year and do all the updates at once to save bandwidth."
+    ],
+    answer:1,
+    hint:"Consider what becomes public on the day a patch is released.",
+    why:"Most security updates are fixing flaws that are already known and being exploited. The moment a patch ships, the details of the hole become public, which makes unpatched devices easier to attack, not harder. Turn on automatic updates and let it restart overnight."
+  },
+  {
+    locale:"Depot Gate",
+    title:"Something in the car park",
+    scenario:"A scavenger from Depot Gate found a USB stick in the loading bay of the old distribution centre. It's got a handwritten label: 'Staff bonuses — confidential'. They're curious. They've got a laptop.",
+    options:[
+      "Plug it in, but don't open any of the files.",
+      "Plug it in on an old laptop that doesn't matter.",
+      "Don't plug it in anywhere. Hand it to whoever handles IT, or bin it.",
+      "Plug it in and run an antivirus scan before opening anything."
+    ],
+    answer:2,
+    hint:"Think about what happens the instant a device is connected, before you open a single file.",
+    why:"A hostile USB device can run code the moment it's connected, and some are built to pretend they're a keyboard and type commands themselves. Antivirus won't necessarily catch it, and 'an old laptop' is still on your network. A tempting label isn't an accident — it's the bait."
+  },
+  {
+    locale:"Greenbank House",
+    title:"Your details were in the leak",
+    scenario:"Greenbank gets a legitimate notice from a shopping site they use: the site was breached and customer emails and passwords were taken. Their password for that site is the same one they use for their email. What's the priority?",
+    options:[
+      "Change the shopping site password and leave everything else alone.",
+      "Delete the shopping account so the stolen data stops being valid.",
+      "Change the email password first, then the shopping site, then everywhere that password was reused — and turn on two-factor.",
+      "Wait and see whether anything actually gets accessed."
+    ],
+    answer:2,
+    hint:"One of those accounts can be used to reset all the others.",
+    why:"Attackers take leaked email-and-password pairs and try them everywhere else — it's called credential stuffing, and it works because people reuse passwords. Your email is the crown jewels, because password resets for everything else land in it. Secure that first, then work outward, and turn on two-factor while you're there."
+  },
+  {
+    locale:"North Crossing",
+    title:"Your parcel is held at the depot",
+    scenario:"A text arrives at North Crossing: a parcel can't be delivered until a $3.50 redirection fee is paid, with a link to pay it. They are, in fact, waiting on a delivery.",
+    options:[
+      "Pay it — the amount is too small to be a scam worth running.",
+      "Click the link to see whether the page looks real before deciding.",
+      "Don't click. Track the parcel through the courier's official app or site, and forward the text to 7226.",
+      "Reply STOP to unsubscribe from the sender."
+    ],
+    answer:2,
+    hint:"The small amount is the whole point of the design. What's actually being harvested on that payment page?"
+    ,
+    why:"The fee is bait — the real prize is the card details you type into the fake payment page. Scammers send these by the million, so somebody is always genuinely expecting a parcel. Replying confirms your number is live. In Australia you can forward scam texts to 7226 for free, and report them at scamwatch.gov.au."
+  },
+  {
+    locale:"Hollow Lane",
+    title:"A torch app with big ideas",
+    scenario:"Hollow Lane installs a free torch app. On first open it asks for access to contacts, the microphone, precise location and photos. The torch works fine either way.",
+    options:[
+      "Allow everything — apps in the store are checked before release.",
+      "Deny what the app doesn't need. If it then refuses to work, uninstall it.",
+      "Allow it now and turn the permissions off later once it's set up.",
+      "Allow location only, since that's the least sensitive one."
+    ],
+    answer:1,
+    hint:"Ask what a torch physically needs to do its job. Everything past that is a business model.",
+    why:"A torch needs the flash. Nothing else. When a simple app asks for contacts, microphone and location, the data is the product, and it gets sold or leaked far more often than anyone admits. Store review catches some bad apps and misses plenty. If denying a permission breaks a torch, that tells you exactly what it was really for."
+  },
+  {
+    locale:"Schoolhouse Shelter",
+    title:"Your files are locked",
+    scenario:"A computer at the Schoolhouse Shelter shows a full-screen message: every file is encrypted, and a payment in cryptocurrency within 48 hours will unlock them. The countdown is ticking. Two other machines are on the same network.",
+    options:[
+      "Pay quickly — the price goes up after the deadline.",
+      "Unplug it from the network, leave it on, and tell IT or a teacher straight away.",
+      "Restart the computer a few times to clear the message.",
+      "Try to delete the locked files and start fresh."
+    ],
+    answer:1,
+    hint:"Two other machines are on the same network. What's the most urgent thing happening right now?",
+    why:"Ransomware spreads sideways, so disconnecting from the network is the first thing that limits the damage. Don't pay — it funds the attack, marks you as willing, and plenty of people pay and get nothing back. Report it immediately; recovery usually comes from backups, and in Australia it can be reported through ReportCyber at cyber.gov.au."
+  },
+  {
+    locale:"Tower Base",
+    title:"Hi, it's IT",
+    scenario:"Someone calls Tower Base. They're friendly, they know the shelter's name and the name of the coordinator, and they say there's a problem with the account. To fix it, they just need the password read out. They're in a bit of a hurry.",
+    options:[
+      "Give it — they already knew internal details, so they must be legitimate.",
+      "Give a slightly wrong password first and see how they react.",
+      "Don't give it. Hang up and call IT back on a number you already had.",
+      "Ask them to email the request so there's a written record, then send it."
+    ],
+    answer:2,
+    hint:"Everything they knew about you could be looked up. The one thing that can't be faked is a number you chose yourself.",
+    why:"This is pretexting: build a convincing story, add time pressure, ask for the thing. Knowing names proves nothing — that's homework, not authorisation. Real IT never needs your password, because they can reset it. Hanging up and dialling a number you already trust breaks the whole trick, and email can be spoofed just as easily as a phone number."
+  },
+  {
+    locale:"Carrow Bridge",
+    title:"First day back",
+    scenario:"Carrow Bridge gets their school running again and a student wants to post a first-day photo. In frame: the school jumper with the crest, the street sign on the corner, and the timetable with their full name on it. Account is public.",
+    options:[
+      "Post it — it's just a school photo, everyone does it.",
+      "Post it but turn off location tagging, which covers the risk.",
+      "Crop or cover the crest, sign and name, or share it privately with people they know.",
+      "Post it and delete it after an hour so it can't be saved."
+    ],
+    answer:2,
+    hint:"Add the three details up rather than judging each one on its own.",
+    why:"Individually harmless, together they're a name, a school and a street — enough for a stranger to sound like someone who knows you. Turning off location tagging does nothing when the street sign is in the shot. Anything public can be screenshotted within seconds, so deleting later doesn't get it back."
+  },
+  {
+    locale:"Far Paddock",
+    title:"The voice on the line",
+    scenario:"Far Paddock gets a call. It's their mum's voice, upset, saying she's stranded and needs money transferred right now to a new account number. The voice is right. The panic is convincing. The number isn't hers.",
+    options:[
+      "Send the money — you'd know your own mother's voice.",
+      "Send a smaller amount as a test first.",
+      "Hang up and ring her back on the number you already have saved.",
+      "Ask a question only she'd know and send it if she gets it right."
+    ],
+    answer:2,
+    hint:"Voices can be cloned from a few seconds of audio. What can't be cloned is a number you dial yourself.",
+    why:"Voice cloning now needs only a short sample, often lifted from social media, and these calls are built to make you act before you think. Hang up and call the number you already have. A shared family code word helps, but asking questions down a live line is risky — the caller controls the conversation and can stall or improvise. Any amount sent is gone."
+  },
+  {
+    locale:"Trade Post",
+    title:"The buyer who wants to verify you",
+    scenario:"Someone at Trade Post is selling a bike online. A buyer seems keen but says they've been scammed before, so they'd like to verify the seller is real: they'll send a six-digit code to the seller's phone, and the seller just reads it back.",
+    options:[
+      "Read it back — it's the buyer's own code, so it can't hurt.",
+      "Don't share it. There's no such thing as verifying a seller with a code sent to the seller's phone.",
+      "Read back only the first three digits as a compromise.",
+      "Agree, but only if the buyer sends a photo of their ID first."
+    ],
+    answer:1,
+    hint:"Work out whose account that code actually belongs to.",
+    why:"There's no legitimate service that verifies a seller by texting them a code. The scammer is signing up for something using your number — often a messaging or payments account — and the code is the only thing stopping them. Hand it over and the account is theirs. A photo of an ID means nothing; they're trivially stolen or generated."
+  },
+  {
+    locale:"Blackridge Relay",
+    title:"The last call is yours",
+    scenario:"The valley is back on the air, and the coordinator asks you to write the one-line standing order for how the network reports trouble from now on. What goes on the board?",
+    options:[
+      "Handle it yourself and only escalate if it gets serious.",
+      "Report it fast to someone who can act — IT, a teacher, or the right agency — even if you're not sure it's real.",
+      "Wait 24 hours to see whether the problem resolves on its own.",
+      "Only report incidents where money was actually lost."
+    ],
+    answer:1,
+    hint:"Every house that went dark this year had someone who noticed something early and said nothing.",
+    why:"Speed is the only advantage defenders get. Waiting lets attackers move sideways, spend the money and cover their tracks, and shame is what scammers rely on to keep people quiet. Report early even when you're unsure: scams to Scamwatch, cyber incidents through ReportCyber, online abuse to eSafety, and at school or work tell IT or a teacher immediately."
+  }
+];
+
+const SALVAGE = [
+  "A printed email, corner scorched. The link text reads one address, the button underneath goes somewhere else entirely.",
+  "A logbook page, damp. Every old password crossed out in the same hand, each one a slight variation of the last.",
+  "A phone, screen cracked, showing fourteen verification texts sent inside eleven minutes. None of them requested.",
+  "A laminated wifi password taped under the till. Sign-in page still loaded, still asking for a Facebook login.",
+  "A tablet frozen mid-download. The update bar hasn't moved in what looks like weeks.",
+  "A USB stick, unlabelled except for marker pen: STAFF BONUSES — CONFIDENTIAL. Nobody here remembers ordering bonuses.",
+  "A breach notification letter, still sealed. Postmarked eight weeks before the lights went out here.",
+  "A text thread, scrolled to a parcel tracking link nobody clicked. It ends mid-sentence.",
+  "A permissions screen for a torch app. Contacts, microphone, location, photos — every toggle switched to yes.",
+  "A monitor, cracked, red screen frozen on a countdown that stopped at zero.",
+  "A call log. Three entries in one evening, all logged as 'IT — unknown number'.",
+  "A printed photo, school jumper crest in frame, geotag still embedded in the file.",
+  "A voicemail transcript. The caller ID says Mum. The number underneath it doesn't.",
+  "A receipt for a bike, paid for twice, collected by neither buyer.",
+  "The relay's original incident log. Page one is blank. Someone decided it wasn't worth writing down."
+];
+
+const RATTLE_LINES = [
+  "…anyone still on nine? anyone…",
+  "…they didn't force the gate. someone opened it…",
+  "…password was on a sticky note. of course it was…",
+  "…tell them the email looked real. tell them…",
+  "…it's quiet out at the quarry now…",
+  "…we clicked it. we all clicked it…",
+  "…three houses went in one night. same message…",
+  "…don't answer the second call. don't…",
+  "…signal's thin tonight. keep the fence up…",
+  "…my brother's voice. it wasn't my brother…"
+];
+
+const VEX_IDLE = [
+  "Take your time. A rushed call is how the last three houses went quiet.",
+  "Read it twice. The trick is usually in a detail they hope you'll skim.",
+  "If something's pushing you to hurry, that's the tell.",
+  "Ask yourself who benefits if they do the easy thing.",
+  "You've got the whole night. The fence is holding."
+];
+
+/* ===================== STATE ===================== */
+let idx=0, charge=0, pressure=0, breaches=0, clean=0, relays=0;
+let picked=null, locked=false, hintUsed=false, finished=false;
+const missed=[];
+const salvage=[];
+let ambientTimer=null;
+let sound=true, music=false, calm=false, audioCtx=null, droneNodes=null;
+
+/* ===================== SHORTHAND ===================== */
+const $=id=>document.getElementById(id);
+
+/* ===================== AUDIO ===================== */
+function ctx(){
+  if(!audioCtx){
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC) return null;
+    audioCtx=new AC();
+  }
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  return audioCtx;
+}
+function beep(freq,dur,type,vol){
+  if(!sound) return;
+  const c=ctx(); if(!c) return;
+  const o=c.createOscillator(), g=c.createGain();
+  o.type=type||"sine"; o.frequency.value=freq;
+  g.gain.setValueAtTime(0,c.currentTime);
+  g.gain.linearRampToValueAtTime(vol||.12,c.currentTime+.015);
+  g.gain.exponentialRampToValueAtTime(.0008,c.currentTime+dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime+dur+.03);
+}
+const sfxPick =()=>beep(420,.08,"triangle",.07);
+const sfxGood =()=>{beep(392,.16,"sine",.11); setTimeout(()=>beep(587,.34,"sine",.11),110);};
+const sfxHint =()=>beep(300,.14,"square",.05);
+
+function noiseBuffer(c,dur){
+  const buf=c.createBuffer(1,Math.max(1,Math.floor(c.sampleRate*dur)),c.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  return buf;
+}
+function sfxGroan(){
+  if(!sound) return;
+  const c=ctx(); if(!c) return;
+  const src=c.createBufferSource(); src.buffer=noiseBuffer(c,.9);
+  const f=c.createBiquadFilter(); f.type="bandpass"; f.Q.value=.7;
+  f.frequency.setValueAtTime(230,c.currentTime);
+  f.frequency.exponentialRampToValueAtTime(85,c.currentTime+.85);
+  const g=c.createGain();
+  g.gain.setValueAtTime(0,c.currentTime);
+  g.gain.linearRampToValueAtTime(.1,c.currentTime+.12);
+  g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.9);
+  src.connect(f); f.connect(g); g.connect(c.destination);
+  src.start(); src.stop(c.currentTime+.95);
+}
+const sfxBad=()=>{ beep(140,.24,"sawtooth",.07); sfxGroan(); };
+function sfxClaw(){
+  if(!sound) return;
+  const c=ctx(); if(!c) return;
+  const src=c.createBufferSource(); src.buffer=noiseBuffer(c,.5);
+  const f=c.createBiquadFilter(); f.type="highpass"; f.frequency.value=1300;
+  const g=c.createGain();
+  g.gain.setValueAtTime(.13,c.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.42);
+  src.connect(f); f.connect(g); g.connect(c.destination);
+  src.start(); src.stop(c.currentTime+.5);
+}
+function sfxBreach(){
+  if(!sound) return;
+  beep(65,1.3,"sawtooth",.13);
+  setTimeout(()=>beep(48,1.6,"sawtooth",.12),180);
+  sfxClaw();
+  setTimeout(sfxGroan,220);
+}
+function startDrone(){
+  const c=ctx(); if(!c||droneNodes) return;
+  const g=c.createGain(); g.gain.value=.03; g.connect(c.destination);
+  const a=c.createOscillator(), b=c.createOscillator();
+  a.type="sine"; a.frequency.value=54;
+  b.type="sine"; b.frequency.value=54.8;
+  const f=c.createBiquadFilter(); f.type="lowpass"; f.frequency.value=240;
+  const lfo=c.createOscillator(), lfoGain=c.createGain();
+  lfo.type="sine"; lfo.frequency.value=.09;
+  lfoGain.gain.value=70;
+  lfo.connect(lfoGain); lfoGain.connect(f.frequency);
+  a.connect(f); b.connect(f); f.connect(g);
+  a.start(); b.start(); lfo.start();
+  droneNodes={a,b,g,lfo};
+  ambientTimer=setInterval(function(){
+    if(sound&&music&&Math.random()<.6) sfxGroan();
+  },9000);
+}
+function stopDrone(){
+  if(!droneNodes) return;
+  try{droneNodes.a.stop();droneNodes.b.stop();droneNodes.lfo.stop();}catch(e){}
+  droneNodes=null;
+  if(ambientTimer){ clearInterval(ambientTimer); ambientTimer=null; }
+}
+
+/* ===================== RENDER ===================== */
+function renderDots(){
+  const d=$("dots"); d.innerHTML="";
+  for(let i=0;i<QUESTIONS.length;i++){
+    const s=document.createElement("span");
+    s.className="dot"+(i<idx?(missed.some(m=>m.i===i)?" missed":" done"):(i===idx?" now":""));
+    d.appendChild(s);
+  }
+}
+function windowCaption(p){
+  if(p>=100) return "It's at the glass.";
+  if(p>=75) return "Something's against the fence line.";
+  if(p>=50) return "Shapes moving past the treeline.";
+  if(p>=25) return "Might be nothing. Probably isn't.";
+  return "Quiet out past the wire.";
+}
+function renderMeters(){
+  $("charge-val").textContent=charge;
+  $("relay-count").textContent=relays+" / "+QUESTIONS.length;
+  $("relay-fill").style.width=(relays/QUESTIONS.length*100)+"%";
+  $("pressure-val").textContent=Math.round(pressure)+"%";
+  $("pressure-fill").style.width=pressure+"%";
+  $("pressure-label").className="pressure-label"+(pressure>=50?" high":"");
+  $("pressure-label").textContent=pressure>=75?"Horde pressure — fence straining":"Horde pressure";
+  const lit=Math.round(pressure/100*6);
+  const icons=$("horde-visual").querySelectorAll("svg");
+  icons.forEach((s,i)=>s.classList.toggle("lit",i<lit));
+  document.body.classList.toggle("p-mid",pressure>=50&&pressure<75);
+  document.body.classList.toggle("p-high",pressure>=75);
+  $("window-cap").textContent=windowCaption(pressure);
+}
+function renderQuestion(){
+  const q=QUESTIONS[idx];
+  picked=null; locked=false; hintUsed=false;
+  $("q-locale").textContent=q.locale;
+  $("q-tag").textContent="Call "+String(idx+1).padStart(2,"0")+" of "+QUESTIONS.length;
+  $("q-title").textContent=q.title;
+  $("q-scenario").textContent=q.scenario;
+  $("q-worth").textContent="100 charge on the line";
+  $("verdict").className="verdict";
+  $("v-salvage").className="salvage-note";
+  $("btn-lock").disabled=true;
+  $("btn-lock").textContent="Lock in the call";
+  $("btn-hint").disabled=false;
+  $("btn-hint").textContent="Ask Vex · costs 40 charge";
+  $("vex-line").textContent=VEX_IDLE[idx%VEX_IDLE.length];
+  $("rattle-line").textContent=RATTLE_LINES[idx%RATTLE_LINES.length];
+
+  const wrap=$("choices"); wrap.innerHTML="";
+  q.options.forEach(function(text,i){
+    const b=document.createElement("button");
+    b.className="choice";
+    b.type="button";
+    b.setAttribute("aria-pressed","false");
+    b.innerHTML='<span class="letter" aria-hidden="true">'+"ABCD"[i]+'</span><span>'+text+'</span>';
+    b.addEventListener("click",function(){ choose(i); });
+    wrap.appendChild(b);
+  });
+  renderDots(); renderMeters();
+}
+function choose(i){
+  if(locked) return;
+  picked=i;
+  const kids=$("choices").children;
+  for(let k=0;k<kids.length;k++) kids[k].setAttribute("aria-pressed", k===i?"true":"false");
+  $("btn-lock").disabled=false;
+  sfxPick();
+}
+
+/* ===================== ACTIONS ===================== */
+function askVex(){
+  if(locked||hintUsed) return;
+  hintUsed=true;
+  charge=Math.max(0,charge-40);
+  $("vex-line").textContent=QUESTIONS[idx].hint;
+  $("btn-hint").disabled=true;
+  $("btn-hint").textContent="Vex has said her piece";
+  $("q-worth").textContent="100 charge on the line · 40 already spent";
+  renderMeters(); sfxHint();
+}
+function lockIn(){
+  if(picked===null||locked) return;
+  locked=true;
+  const q=QUESTIONS[idx];
+  const right=picked===q.answer;
+  const kids=$("choices").children;
+  for(let k=0;k<kids.length;k++){
+    kids[k].disabled=true;
+    if(k===q.answer) kids[k].classList.add("correct");
+    else if(k===picked) kids[k].classList.add("wrong");
+  }
+  const v=$("verdict");
+  if(right){
+    charge+=100; relays++; if(!hintUsed) clean++;
+    pressure=Math.max(0,pressure-5);
+    $("v-head").textContent=q.locale+" is back online";
+    $("v-body").textContent=q.why;
+    v.className="verdict show good";
+    $("vex-line").textContent="Good call. That's one more light in the valley.";
+    salvage.push({loc:q.locale,text:SALVAGE[idx]});
+    $("salvage-count").textContent=salvage.length;
+    $("v-salvage").textContent="Salvaged from "+q.locale+" — "+SALVAGE[idx];
+    $("v-salvage").className="salvage-note show";
+    sfxGood();
+  }else{
+    pressure=Math.min(100,pressure+25);
+    missed.push({i:idx,title:q.title,why:q.why});
+    $("v-head").textContent="That one stays dark";
+    $("v-body").textContent=q.why;
+    v.className="verdict show bad";
+    $("vex-line").textContent="Not the call I'd have made. Learn it now, not later.";
+    if(!calm) $("card").classList.add("shake");
+    setTimeout(()=>$("card").classList.remove("shake"),460);
+    sfxBad();
+  }
+  renderMeters();
+  if(pressure>=100) triggerBreach();
+  $("btn-hint").disabled=true;
+  $("btn-lock").disabled=false;
+  $("btn-lock").textContent = (idx===QUESTIONS.length-1) ? "Finish the night" : "Next call";
+}
+function triggerBreach(){
+  breaches++;
+  charge=Math.max(0,charge-150);
+  pressure=40;
+  const b=$("breach"); b.classList.add("show");
+  document.body.classList.add("breach-now");
+  sfxBreach();
+  setTimeout(function(){
+    b.classList.remove("show");
+    document.body.classList.remove("breach-now");
+    renderMeters();
+  },1500);
+}
+function advance(){
+  if(idx>=QUESTIONS.length-1){ finish(); return; }
+  idx++; renderQuestion();
+  window.scrollTo({top:0,behavior:calm?"auto":"smooth"});
+}
+
+/* ===================== DEBRIEF ===================== */
+function finish(){
+  finished=true;
+  $("game").classList.add("hidden");
+  $("debrief").classList.remove("hidden");
+  $("d-charge").textContent=charge;
+  $("d-relays").textContent=relays+" / "+QUESTIONS.length;
+  $("d-clean").textContent=clean;
+  $("d-breach").textContent=breaches;
+
+  let rank,body,eyebrow;
+  if(relays===QUESTIONS.length && breaches===0){
+    eyebrow="Dawn · the fence never moved";
+    rank="Relay Warden";
+    body="Fifteen out of fifteen and the fence never so much as rattled. Every house in the valley is talking again, and not one of them went down on your watch. This is the standard the network needed eleven months ago.";
+  }else if(relays>=12){
+    eyebrow="Dawn · the tower held";
+    rank="Night Operator";
+    body="Most of the valley is back on the air. You caught the pressure tactics and the fake authority, and the calls you missed are the ones worth reading again before your next shift.";
+  }else if(relays>=8){
+    eyebrow="Dawn · patchy signal";
+    rank="Relay Hand";
+    body="Over half the network is back, which is more than yesterday. The pattern in what you missed is usually the same: someone was in a hurry and you went along with it.";
+  }else{
+    eyebrow="Dawn · thin signal";
+    rank="Trainee on the desk";
+    body="Rough night on the channel. That's the point of the exercise — every wrong call here is one you don't have to make for real. Read the notes below and run it again.";
+  }
+  $("d-eyebrow").textContent=eyebrow;
+  $("d-rank").textContent=rank;
+  $("d-body").textContent=body;
+  $("d-title").textContent = relays===QUESTIONS.length ? "The valley is lit" : "Sunrise on Blackridge";
+
+  if(missed.length){
+    $("d-report").classList.remove("hidden");
+    const ul=$("d-misses"); ul.innerHTML="";
+    missed.forEach(function(m){
+      const li=document.createElement("li");
+      li.innerHTML="<strong>"+m.title+"</strong> — "+m.why;
+      ul.appendChild(li);
+    });
+  }else{
+    $("d-report").classList.add("hidden");
+  }
+  window.scrollTo({top:0,behavior:calm?"auto":"smooth"});
+}
+function restart(){
+  idx=0;charge=0;pressure=0;breaches=0;clean=0;relays=0;
+  missed.length=0; salvage.length=0; finished=false;
+  $("salvage-count").textContent="0";
+  document.body.classList.remove("p-mid","p-high","breach-now");
+  $("debrief").classList.add("hidden");
+  $("game").classList.remove("hidden");
+  renderQuestion();
+  window.scrollTo({top:0,behavior:"auto"});
+}
+function renderSalvagePanel(){
+  const wrap=$("salvage-list");
+  if(!salvage.length){
+    wrap.innerHTML='<p class="salvage-empty">Nothing salvaged yet — clear a safe house to find something.</p>';
+    return;
+  }
+  wrap.innerHTML="";
+  salvage.forEach(function(s){
+    const d=document.createElement("div");
+    d.className="salvage-item";
+    d.innerHTML='<span class="loc">'+s.loc+'</span><p>'+s.text+'</p>';
+    wrap.appendChild(d);
+  });
+}
+
+/* ===================== WIRING ===================== */
+$("btn-begin").addEventListener("click",function(){
+  $("gate").classList.add("hidden");
+  $("game").classList.remove("hidden");
+  ctx();
+  renderQuestion();
+});
+$("btn-hint").addEventListener("click",askVex);
+$("btn-lock").addEventListener("click",function(){ locked ? advance() : lockIn(); });
+$("btn-again").addEventListener("click",restart);
+
+$("t-sound").addEventListener("click",function(){
+  sound=!sound;
+  this.setAttribute("aria-pressed",String(sound));
+  this.textContent=sound?"Sound on":"Sound off";
+  if(sound) ctx();
+});
+$("t-music").addEventListener("click",function(){
+  music=!music;
+  this.setAttribute("aria-pressed",String(music));
+  this.textContent=music?"Groans on":"Groans off";
+  music?startDrone():stopDrone();
+});
+$("t-guide").addEventListener("click",()=>$("veil-guide").classList.add("show"));
+$("t-how").addEventListener("click",()=>$("veil-how").classList.add("show"));
+$("t-salvage").addEventListener("click",function(){ renderSalvagePanel(); $("veil-salvage").classList.add("show"); });
+document.querySelectorAll("[data-close]").forEach(function(b){
+  b.addEventListener("click",function(){
+    b.closest(".veil").classList.remove("show");
+  });
+});
+document.querySelectorAll(".veil").forEach(function(v){
+  v.addEventListener("click",function(e){ if(e.target===v) v.classList.remove("show"); });
+});
+
+document.addEventListener("keydown",function(e){
+  const open=document.querySelector(".veil.show");
+  if(e.key==="Escape"&&open){ open.classList.remove("show"); return; }
+  if(open||finished||$("game").classList.contains("hidden")) return;
+  const k=e.key.toLowerCase();
+  const map={a:0,b:1,c:2,d:3,"1":0,"2":1,"3":2,"4":3};
+  if(k in map && !locked){ e.preventDefault(); choose(map[k]); return; }
+  if(e.key==="Enter"){
+    e.preventDefault();
+    locked ? advance() : lockIn();
+  }
+  if(k==="h" && !locked && !hintUsed){ e.preventDefault(); askVex(); }
+});
+
+if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+  calm=true;
+  document.body.classList.add("calm");
+}
+
+/* rotate the scanner chatter */
+setInterval(function(){
+  if(finished||$("game").classList.contains("hidden")) return;
+  const line=RATTLE_LINES[Math.floor(Math.random()*RATTLE_LINES.length)];
+  $("rattle-line").textContent=line;
+},13000);
+
+})();
+</script>
+</body>
+</html>
